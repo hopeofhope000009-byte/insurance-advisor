@@ -2,33 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insurance Advisor</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="tabs">
-        <button class="tab" onclick="openTab(event, 'UploadProducts')">Upload Products</button>
-        <button class="tab" onclick="openTab(event, 'ClientRequest')">Client Request</button>
-        <button class="tab" onclick="openTab(event, 'Recommendations')">Recommendations</button>
-    </div>
-
-    <div id="UploadProducts" class="tabcontent">
-        <h3>Upload Products</h3>
-        <input type="file" id="productFile">
-        <button onclick="uploadProducts()">Upload</button>
-    </div>
-
-    <div id="ClientRequest" class="tabcontent">
-        <h3>Client Request</h3>
-        <textarea id="clientRequest" placeholder="Describe your needs..."></textarea>
-        <button onclick="submitRequest()">Submit Request</button>
-    </div>
-
-    <div id="Recommendations" class="tabcontent">
-        <h3>Recommendations</h3>
-        <div id="recommendationsList"></div>
-    </div>
-
-    <script src="app.js"></script>
+    <h1>Welcome to the Insurance Advisor Web Application</h1>
+    <p>Your go-to solution for insurance needs.</p>
 </body>
 </html>
