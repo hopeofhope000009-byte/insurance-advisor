@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人保险顾问系统</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
         :root {
             --primary: #2563eb;
@@ -96,169 +98,221 @@
             width: 100%;
         }
 
-        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { background: #94a3b8; }
 
-        .status-message {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 6px;
-            background: #dcfce7;
-            color: #166534;
-            display: none;
+        /* Report Styles */
+        #report-display {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: white;
+            border-top: 5px solid var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
 
+        #report-content {
+            color: #334155;
+            margin-top: 1rem;
+        }
+
+        #report-content h1, #report-content h2 { color: var(--primary); }
+        
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1.5rem;
-            margin-top: 1rem;
         }
 
         .product-card {
             border: 1px solid #e2e8f0;
             padding: 1rem;
             border-radius: 8px;
-            position: relative;
         }
 
-        .delete-btn {
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 0.8rem;
-            text-decoration: underline;
-        }
+        .delete-btn { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 0.8rem; }
 
-        footer { text-align: center; margin-top: 4rem; color: var(--secondary); font-size: 0.9rem; }
+        @media print {
+            header, nav, #upload, #library, .form-group, button { display: none !important; }
+            #report-display { display: block !important; border: none; box-shadow: none; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="main-app">
-        <header>
-            <div class="header-content">
-                <h1>🏥 保险顾问系统 (个人离线版)</h1>
-                <span>管理员模式</span>
+    <header>
+        <div class="header-content">
+            <h1>🏥 保险顾问 AI 系统</h1>
+            <span>离线存储 + 云端分析</span>
+        </div>
+    </header>
+
+    <nav>
+        <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
+        <button onclick="showSection('library')" class="nav-btn">产品库</button>
+        <button onclick="showSection('client')" class="nav-btn">智能分析</button>
+    </nav>
+
+    <main>
+        <section id="upload" class="section active">
+            <h2>📁 导入保险文件 (PDF)</h2>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label>保险公司:</label>
+                    <input type="text" id="company-name" placeholder="如：平安保险" required>
+                </div>
+                <div class="form-group">
+                    <label>选择文件夹/文件:</label>
+                    <input type="file" id="product-file" webkitdirectory directory multiple required>
+                </div>
+                <button type="submit" class="btn-primary">保存到本地产品库</button>
+            </form>
+            <div id="upload-status" style="margin-top:10px; color: green; display:none;"></div>
+        </section>
+
+        <section id="library" class="section">
+            <h2>📚 我的产品库</h2>
+            <button onclick="clearLibrary()" style="margin-bottom:10px; color:red; border:none; background:none; cursor:pointer;">清空库</button>
+            <div id="products-list" class="products-grid"></div>
+        </section>
+
+        <section id="client" class="section">
+            <h2>📋 客户需求与 AI 分析</h2>
+            <div class="form-group">
+                <label>客户姓名:</label>
+                <input type="text" id="client-name" placeholder="客户姓名">
             </div>
-        </header>
-        <nav>
-            <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
-            <button onclick="showSection('library')" class="nav-btn">产品库</button>
-            <button onclick="showSection('client')" class="nav-btn">客户需求</button>
-        </nav>
+            <div class="form-group">
+                <label>分析需求:</label>
+                <textarea id="client-requirements" rows="4" placeholder="例如：30岁男性，年预算5000元，关注重疾和住院医疗。"></textarea>
+            </div>
+            <button class="btn-primary" id="analyze-btn" onclick="runAIAnalysis()">生成智能建议报告</button>
 
-        <main>
-            <section id="upload" class="section active">
-                <h2>📁 批量上传文件夹</h2>
-                <p>选择一个包含多个保险 PDF 文件的文件夹，系统将自动识别并保存到本地库中。</p>
-                <form id="upload-form">
-                    <div class="form-group">
-                        <label>保险公司名称:</label>
-                        <input type="text" id="company-name" placeholder="例如：平安保险" required>
-                    </div>
-                    <div class="form-group">
-                        <label>选择文件夹:</label>
-                        <input type="file" id="product-file" webkitdirectory directory multiple required>
-                    </div>
-                    <div class="form-group">
-                        <label>产品大类:</label>
-                        <select id="product-type">
-                            <option value="健康险">健康保险</option>
-                            <option value="寿险">人寿保险</option>
-                            <option value="意外险">意外保险</option>
-                            <option value="其他">其他</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-primary">保存到本地库</button>
-                </form>
-                <div id="upload-status" class="status-message"></div>
-            </section>
-
-            <section id="library" class="section">
-                <h2>📚 我的产品库</h2>
-                <button onclick="clearLibrary()" style="color: red; margin-bottom: 10px; cursor:pointer;">清空所有库文件</button>
-                <div id="products-list" class="products-grid">
-                    </div>
-            </section>
-
-            <section id="client" class="section">
-                <h2>📋 客户分析</h2>
-                <div class="form-group">
-                    <label>客户姓名:</label>
-                    <input type="text" placeholder="输入客户姓名">
+            <div id="report-display" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>📊 AI 方案建议书</h3>
+                    <button onclick="window.print()" style="padding: 5px 10px; cursor: pointer;">打印为 PDF</button>
                 </div>
-                <div class="form-group">
-                    <label>分析需求:</label>
-                    <textarea rows="4" placeholder="例如：30岁男性，预算5000/年，需要重疾险..."></textarea>
-                </div>
-                <button class="btn-primary" onclick="alert('分析功能需对接AI接口，目前已保存需求')">生成分析报告</button>
-            </section>
-        </main>
-
-        <footer>
-            <p>&copy; 2026 个人保险顾问系统 | 数据存储于本地浏览器</p>
-        </footer>
-    </div>
+                <div id="report-content"></div>
+            </div>
+        </section>
+    </main>
 
     <script>
-        // Data Management using LocalStorage
+        // PDF.js Setup
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
         let productLibrary = JSON.parse(localStorage.getItem('insurance_docs')) || [];
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            event.currentTarget.classList.add('active');
-            if(id === 'library') renderLibrary();
+            if (event) event.currentTarget.classList.add('active');
+            if (id === 'library') renderLibrary();
         }
 
-        // Handle folder upload
-        document.getElementById('upload-form').addEventListener('submit', function(e) {
+        // PDF Text Extraction
+        async function extractTextFromPDF(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let text = "";
+                const pages = Math.min(pdf.numPages, 3); // Extract first 3 pages
+                for (let i = 1; i <= pages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(" ");
+                }
+                return text;
+            } catch (e) { return ""; }
+        }
+
+        // Upload Form
+        document.getElementById('upload-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const btn = this.querySelector('button');
+            btn.innerText = "⏳ 正在解析 PDF...";
+            btn.disabled = true;
+
             const company = document.getElementById('company-name').value;
-            const type = document.getElementById('product-type').value;
             const files = document.getElementById('product-file').files;
             
-            let addedCount = 0;
             for (let file of files) {
                 if (file.name.toLowerCase().endsWith('.pdf')) {
-                    const product = {
+                    const text = await extractTextFromPDF(file);
+                    productLibrary.push({
                         id: Date.now() + Math.random(),
                         fileName: file.name,
                         company: company,
-                        type: type,
-                        date: new Date().toLocaleDateString()
-                    };
-                    productLibrary.push(product);
-                    addedCount++;
+                        content: text.substring(0, 3000)
+                    });
                 }
             }
-
             localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
-            
-            const status = document.getElementById('upload-status');
-            status.style.display = 'block';
-            status.innerText = `成功导入 ${addedCount} 个文件！请前往产品库查看。`;
-            this.reset();
+            btn.innerText = "保存到本地产品库";
+            btn.disabled = false;
+            document.getElementById('upload-status').innerText = "导入成功！";
+            document.getElementById('upload-status').style.display = "block";
         });
+
+        // THE UPDATED AI ANALYSIS FUNCTION
+        async function runAIAnalysis() {
+            const name = document.getElementById('client-name').value;
+            const reqs = document.getElementById('client-requirements').value;
+            const btn = document.getElementById('analyze-btn');
+            const display = document.getElementById('report-display');
+            const content = document.getElementById('report-content');
+
+            if (productLibrary.length === 0) return alert("请先上传保险产品 PDF");
+            if (!reqs) return alert("请输入客户需求");
+
+            btn.innerText = "🧠 AI 正在分析产品库并匹配需求...";
+            btn.disabled = true;
+
+            // Combine Library data into one string for the AI
+            const context = productLibrary.map(p => `[产品:${p.company}-${p.fileName}] 内容摘要:${p.content}`).join("\n\n");
+
+            const prompt = `你是一位保险专家。
+            客户：${name}
+            需求：${reqs}
+            产品库：
+            ${context}
+            
+            请根据客户需求，从库中选出最匹配的产品，并写一份专业的分析报告。包括推荐理由和保障分析。`;
+
+            try {
+                // Call your Vercel Serverless Function
+                const response = await fetch('/api/analyze', {
+                    method: "POST",
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const data = await response.json();
+                // Extracting text from Gemini's response structure
+                const markdownText = data.candidates[0].content.parts[0].text;
+                
+                display.style.display = 'block';
+                content.innerHTML = marked.parse(markdownText);
+                display.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error(error);
+                alert("分析失败。请确保你已在 Vercel 设置了 GEMINI_API_KEY 并且创建了 api/analyze.js 文件。");
+            } finally {
+                btn.innerText = "生成智能建议报告";
+                btn.disabled = false;
+            }
+        }
 
         function renderLibrary() {
             const list = document.getElementById('products-list');
-            list.innerHTML = '';
-            
-            if (productLibrary.length === 0) {
-                list.innerHTML = '<p>库中暂无产品，请先上传。</p>';
-                return;
-            }
-
+            list.innerHTML = productLibrary.length ? '' : '<p>暂无文件</p>';
             productLibrary.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                card.innerHTML = `
-                    <strong>${item.fileName}</strong><br>
-                    <small>公司: ${item.company}</small><br>
-                    <small>类型: ${item.type}</small><br>
-                    <span class="delete-btn" onclick="deleteProduct(${item.id})">删除</span>
-                `;
+                card.innerHTML = `<strong>${item.fileName}</strong><br><small>${item.company}</small><br>
+                <span class="delete-btn" onclick="deleteProduct(${item.id})">删除</span>`;
                 list.appendChild(card);
             });
         }
@@ -270,15 +324,12 @@
         }
 
         function clearLibrary() {
-            if(confirm('确定要清空所有产品吗？')) {
+            if(confirm('清空库？')) {
                 productLibrary = [];
                 localStorage.removeItem('insurance_docs');
                 renderLibrary();
             }
         }
-
-        // Initialize view
-        renderLibrary();
     </script>
 </body>
 </html>
