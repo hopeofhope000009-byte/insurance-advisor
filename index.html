@@ -1,80 +1,250 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insurance Advisor</title>
+    <title>保险顾问</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="#upload-products">Upload Products</a></li>
-                <li><a href="#client-request">Client Request</a></li>
-                <li><a href="#results">Results</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section id="upload-products">
-            <h2>Upload Products</h2>
-            <form id="upload-form">
-                <label for="product-file">Choose a PDF file:</label>
-                <input type="file" id="product-file" accept="application/pdf" required>
-                <button type="submit">Upload</button>
-            </form>
-        </section>
-        <section id="client-request">
-            <h2>Client Request Form</h2>
-            <form id="client-form">
-                <label for="name">Name:</label>
-                <input type="text" id="name" required>
-                <label for="email">Email:</label>
-                <input type="email" id="email" required>
-                <label for="coverage-needs">Coverage Needs:</label>
-                <textarea id="coverage-needs" required></textarea>
-                <label for="medical-history">Medical History:</label>
-                <textarea id="medical-history"></textarea>
-                <button type="submit">Submit Request</button>
-            </form>
-        </section>
-        <section id="results">
-            <h2>Results</h2>
-            <div id="recommendations">
-                <h3>Recommendations</h3>
-                <!-- dynamic product recommendations will be shown here -->
-            </div>
-            <table id="comparison-table">
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Coverage</th>
-                        <th>Price</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- dynamic comparison data will be populated here -->
-                </tbody>
-            </table>
-            <button id="download-button">Download Report</button>
-            <button id="share-button">Share Results</button>
-        </section>
-        <section id="login">
-            <h2>Login</h2>
+    <!-- 登录界面 -->
+    <div id="login-section" class="modal-overlay">
+        <div class="modal-content">
+            <h2>登录</h2>
             <form id="login-form">
-                <label for="username">Username:</label>
-                <input type="text" id="username" required>
-                <label for="password">Password:</label>
-                <input type="password" id="password" required>
-                <button type="submit">Login</button>
+                <div class="form-group">
+                    <label for="login-email">邮箱:</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">密码:</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn-primary">登录</button>
+                <button type="button" class="btn-secondary" onclick="toggleSignup()">注册新账户</button>
             </form>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2026 Insurance Advisor</p>
-    </footer>
+        </div>
+    </div>
+
+    <!-- 注册界面 -->
+    <div id="signup-section" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>创建账户</h2>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-email">邮箱:</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">密码:</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm">确认密码:</label>
+                    <input type="password" id="signup-confirm" required>
+                </div>
+                <button type="submit" class="btn-primary">注册</button>
+                <button type="button" class="btn-secondary" onclick="toggleSignup()">返回登录</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="main-app" style="display: none;">
+        <header>
+            <div class="header-content">
+                <h1>🏥 保险顾问系统</h1>
+                <div class="user-info">
+                    <span id="user-name"></span>
+                    <button onclick="logout()" class="btn-logout">登出</button>
+                </div>
+            </div>
+            <nav>
+                <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
+                <button onclick="showSection('client')" class="nav-btn">客户请求</button>
+                <button onclick="showSection('results')" class="nav-btn">推荐结果</button>
+                <button onclick="showSection('library')" class="nav-btn">产品库</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- 上传产品部分 -->
+            <section id="upload" class="section">
+                <h2>📁 上传保险产品</h2>
+                <div class="upload-container">
+                    <form id="upload-form" class="upload-form">
+                        <div class="form-group">
+                            <label>选择保险公司:</label>
+                            <input type="text" id="company-name" placeholder="请输入保险公司名称" required>
+                        </div>
+                        <div class="form-group">
+                            <label>选择PDF文件或文件夹:</label>
+                            <input type="file" id="product-file" accept=".pdf" multiple required>
+                            <small>支持多个文件批量上传</small>
+                        </div>
+                        <div class="form-group">
+                            <label>产品类型:</label>
+                            <select id="product-type" required>
+                                <option value="">-- 选择产品类型 --</option>
+                                <option value="health">健康保险</option>
+                                <option value="life">人寿保险</option>
+                                <option value="accident">意外保险</option>
+                                <option value="property">财产保险</option>
+                                <option value="auto">汽车保险</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">上传文件</button>
+                    </form>
+                    <div id="upload-status" class="status-message"></div>
+                </div>
+            </section>
+
+            <!-- 客户请求部分 -->
+            <section id="client" class="section" style="display: none;">
+                <h2>📋 客户需求表</h2>
+                <form id="client-form" class="client-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="client-name">客户姓名:</label>
+                            <input type="text" id="client-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="client-age">年龄:</label>
+                            <input type="number" id="client-age" min="18" max="100" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="client-email">邮箱:</label>
+                            <input type="email" id="client-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="client-phone">电话:</label>
+                            <input type="tel" id="client-phone" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverage-needs">保险需求:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="health" class="coverage-type"> 健康保险</label>
+                            <label><input type="checkbox" value="life" class="coverage-type"> 人寿保险</label>
+                            <label><input type="checkbox" value="accident" class="coverage-type"> 意外保险</label>
+                            <label><input type="checkbox" value="property" class="coverage-type"> 财产保险</label>
+                            <label><input type="checkbox" value="auto" class="coverage-type"> 汽车保险</label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="budget">预算范围 (月付/年付):</label>
+                            <input type="text" id="budget" placeholder="例: 500-1000元/月" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coverage-amount">保额需求:</label>
+                            <input type="text" id="coverage-amount" placeholder="例: 50万" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="medical-history">医疗历史及特殊情况:</label>
+                        <textarea id="medical-history" placeholder="请详细说明任何重要的健康信息" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="special-requirements">特殊需求:</label>
+                        <textarea id="special-requirements" placeholder="其他特殊需求或偏好" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-large">搜索最佳方案</button>
+                </form>
+            </section>
+
+            <!-- 推荐结果部分 -->
+            <section id="results" class="section" style="display: none;">
+                <h2>💡 推荐方案</h2>
+                <div id="results-container">
+                    <div id="recommendations" class="recommendations-list">
+                        <!-- 推荐产品将动态显示在这里 -->
+                    </div>
+                    
+                    <div id="comparison-section" style="display: none;">
+                        <h3>产品对比表</h3>
+                        <div class="table-responsive">
+                            <table id="comparison-table" class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>产品名称</th>
+                                        <th>保险公司</th>
+                                        <th>保额</th>
+                                        <th>保费</th>
+                                        <th>保障范围</th>
+                                        <th>评分</th>
+                                        <th>详情</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 对比数据将动态填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="summary-section" style="display: none;">
+                        <h3>最佳推荐总结</h3>
+                        <div id="summary-content" class="summary-box"></div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button onclick="downloadReport()" class="btn-primary">📥 下载报告</button>
+                        <button onclick="generateShareLink()" class="btn-secondary">🔗 生成分享链接</button>
+                        <button onclick="sendEmail()" class="btn-secondary">📧 发送给客户</button>
+                        <button onclick="printReport()" class="btn-secondary">🖨️ 打印报告</button>
+                    </div>
+
+                    <div id="share-link-container" style="display: none;">
+                        <h4>分享链接:</h4>
+                        <div class="share-link">
+                            <input type="text" id="share-link-input" readonly>
+                            <button onclick="copyShareLink()" class="btn-small">复制链接</button>
+                        </div>
+                        <p class="info-text">⏰ 链接将在7天后过期</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 产品库部分 -->
+            <section id="library" class="section" style="display: none;">
+                <h2>📚 保险产品库</h2>
+                <div class="library-container">
+                    <div class="filters">
+                        <select id="filter-company" onchange="filterProducts()">
+                            <option value="">所有公司</option>
+                        </select>
+                        <select id="filter-type" onchange="filterProducts()">
+                            <option value="">所有类型</option>
+                            <option value="health">健康保险</option>
+                            <option value="life">人寿保险</option>
+                            <option value="accident">意外保险</option>
+                            <option value="property">财产保险</option>
+                            <option value="auto">汽车保险</option>
+                        </select>
+                        <input type="text" id="search-product" placeholder="搜索产品..." onkeyup="filterProducts()">
+                    </div>
+                    <div id="products-list" class="products-grid">
+                        <!-- 产品卡片将动态显示 -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 保险顾问系统 | 仅供个人使用 | 严格保密</p>
+        </footer>
+    </div>
 </body>
 </html>
