@@ -1,141 +1,43 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>AI 保险专家 - 兼容性版</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #f0f4f8; padding: 20px; line-height: 1.5; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .card { border: 2px solid #e2e8f0; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; }
-        .upload-zone { border: 2px dashed #3b82f6; padding: 20px; text-align: center; background: #eff6ff; margin-bottom: 10px; }
-        button { padding: 12px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
-        button:disabled { background: #94a3b8; }
-        #status { color: #2563eb; font-weight: bold; margin: 10px 0; }
-        textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        #out { margin-top: 20px; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
-    </style>
-</head>
-<body>
+// ... (Keep your existing HTML and CSS, just update this specific part of the runAnalysis function)
 
-<div class="container">
-    <h2 style="text-align:center; color:#1e40af;">🛡️ 保险顾问 AI (兼容版本)</h2>
-    
-    <div class="card">
-        <h3>1. 导入产品 PDF</h3>
-        <p style="font-size: 0.9em; color: #64748b;">如果文件夹上传不显示文件，请使用“选择多个文件”按钮。</p>
+async function runAnalysis() {
+    const btn = document.getElementById('btn');
+    const out = document.getElementById('out');
+    const reqs = document.getElementById('reqs').value;
+
+    if (productDB.length === 0) return alert("库里没东西，请先上传 PDF。");
+    if (!reqs) return alert("请输入需求。");
+
+    btn.disabled = true;
+    btn.innerText = "🚀 AI 正在生成专家报告...";
+
+    // Context management: Only send the first 5 products to avoid "Input Token Limit"
+    const selectedDocs = productDB.slice(0, 5);
+    const prompt = `你是一位顶级保险专家。需求: ${reqs}。库中产品数据如下: ${selectedDocs.map(d => d.content).join("\n")}`;
+
+    try {
+        // SWITCHED TO 1.5-FLASH for higher quota stability
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const data = await resp.json();
         
-        <div class="upload-zone">
-            <label>方式 A (整文件夹): </label>
-            <input type="file" id="folderInput" webkitdirectory directory multiple>
-            <br><br>
-            <label>方式 B (选多个文件): </label>
-            <input type="file" id="fileInput" accept=".pdf" multiple>
-        </div>
-
-        <button id="upBtn" onclick="handleUpload()">解析并导入库</button>
-        <div id="status">准备就绪</div>
-    </div>
-
-    <div class="card">
-        <h3>2. 客户需求分析</h3>
-        <textarea id="reqs" rows="4" placeholder="例如：30岁男性，年预算1万，想要重疾加医疗..."></textarea>
-        <button id="btn" onclick="runAnalysis()">生成智能建议报告</button>
-    </div>
-
-    <div id="out">报告将显示在这里...</div>
-    
-    <div style="text-align:center; margin-top:30px;">
-        <button onclick="localStorage.clear(); location.reload();" style="background:#dc2626; width:auto; font-size:12px;">清空所有数据并刷新</button>
-    </div>
-</div>
-
-<script>
-    const KEY = "AIzaSyArJg6XfI4gWHhK46xsMc0zHUdJlfa98QY";
-    let productDB = JSON.parse(localStorage.getItem('insurance_docs')) || [];
-
-    // PDF Worker Config
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
-    async function handleUpload() {
-        // Try to get files from either input
-        const folderFiles = document.getElementById('folderInput').files;
-        const individualFiles = document.getElementById('fileInput').files;
-        const files = folderFiles.length > 0 ? folderFiles : individualFiles;
-
-        const status = document.getElementById('status');
-        const upBtn = document.getElementById('upBtn');
-
-        if (files.length === 0) return alert("未检测到文件！请先选择文件夹或文件。");
-
-        upBtn.disabled = true;
-        status.innerText = "⏳ 正在提取 PDF 文本...";
-        let count = 0;
-
-        for (let file of files) {
-            if (file.name.toLowerCase().endsWith('.pdf')) {
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                    let text = "";
-                    // Read top 3 pages
-                    for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        text += content.items.map(it => it.str).join(" ");
-                    }
-                    productDB.push({ name: file.name, content: text.slice(0, 3000) });
-                    count++;
-                    status.innerText = `⏳ 正在解析第 ${count} 个文件...`;
-                } catch (e) {
-                    console.error("解析错误:", file.name);
-                }
+        if (data.error) {
+            // If it still says Quota Exceeded, explain it to the user
+            if (data.error.status === "RESOURCE_EXHAUSTED") {
+                throw new Error("AI 此时太忙（触发频率限制），请等待 1 分钟后再试。");
             }
+            throw new Error(data.error.message);
         }
 
-        try {
-            localStorage.setItem('insurance_docs', JSON.stringify(productDB));
-            status.innerText = `✅ 成功！当前库中共有 ${productDB.length} 个产品。`;
-        } catch (e) {
-            alert("浏览器存储空间不足，请先清空数据。");
-        }
-        upBtn.disabled = false;
+        out.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
+    } catch (e) {
+        alert("生成失败: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "生成智能建议报告";
     }
-
-    async function runAnalysis() {
-        const btn = document.getElementById('btn');
-        const out = document.getElementById('out');
-        const reqs = document.getElementById('reqs').value;
-
-        if (productDB.length === 0) return alert("库里没东西，请先上传 PDF。");
-        if (!reqs) return alert("请输入需求。");
-
-        btn.disabled = true;
-        btn.innerText = "🚀 AI 2.0 正在生成专家报告...";
-
-        const prompt = `你是一位顶级保险专家。需求: ${reqs}。库中产品数据如下: ${productDB.map(d => d.content).join("\n")}`;
-
-        try {
-            // Using your confirmed working Gemini 2.0 Flash
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error.message);
-
-            out.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
-        } catch (e) {
-            alert("生成失败: " + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "生成智能建议报告";
-        }
-    }
-</script>
-</body>
-</html>
+}
