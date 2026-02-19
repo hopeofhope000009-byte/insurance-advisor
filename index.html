@@ -2,43 +2,52 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>AI 保险专家 - 修复版</title>
+    <title>AI 保险专家 - 兼容性版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: system-ui, sans-serif; background: #f0f4f8; padding: 20px; line-height: 1.5; }
         .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .card { border: 2px dashed #cbd5e1; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fafafa; }
+        .card { border: 2px solid #e2e8f0; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; }
+        .upload-zone { border: 2px dashed #3b82f6; padding: 20px; text-align: center; background: #eff6ff; margin-bottom: 10px; }
         button { padding: 12px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
-        button:hover { background: #1d4ed8; }
-        #status { color: #059669; font-weight: bold; margin: 10px 0; min-height: 1.2em; }
+        button:disabled { background: #94a3b8; }
+        #status { color: #2563eb; font-weight: bold; margin: 10px 0; }
         textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        #out { margin-top: 20px; padding-top: 20px; border-top: 2px solid #eee; line-height: 1.6; }
-        .admin-tools { margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; }
+        #out { margin-top: 20px; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color:#1e40af;">🏥 保险顾问 AI 系统</h2>
+    <h2 style="text-align:center; color:#1e40af;">🛡️ 保险顾问 AI (兼容版本)</h2>
     
     <div class="card">
-        <h3>1. 导入产品 (PDF 或 文件夹)</h3>
-        <input type="file" id="files" webkitdirectory directory multiple>
-        <button onclick="handleUpload()">解析并导入文件</button>
-        <div id="status"></div>
+        <h3>1. 导入产品 PDF</h3>
+        <p style="font-size: 0.9em; color: #64748b;">如果文件夹上传不显示文件，请使用“选择多个文件”按钮。</p>
+        
+        <div class="upload-zone">
+            <label>方式 A (整文件夹): </label>
+            <input type="file" id="folderInput" webkitdirectory directory multiple>
+            <br><br>
+            <label>方式 B (选多个文件): </label>
+            <input type="file" id="fileInput" accept=".pdf" multiple>
+        </div>
+
+        <button id="upBtn" onclick="handleUpload()">解析并导入库</button>
+        <div id="status">准备就绪</div>
     </div>
 
     <div class="card">
-        <h3>2. 客户分析</h3>
-        <textarea id="reqs" rows="4" placeholder="输入客户需求..."></textarea>
-        <button id="btn" onclick="runAnalysis()">开始生成报告</button>
+        <h3>2. 客户需求分析</h3>
+        <textarea id="reqs" rows="4" placeholder="例如：30岁男性，年预算1万，想要重疾加医疗..."></textarea>
+        <button id="btn" onclick="runAnalysis()">生成智能建议报告</button>
     </div>
 
-    <div id="out"></div>
-
-    <div class="admin-tools">
-        <button onclick="resetSystem()" style="background:#ef4444; width: auto; font-size: 12px;">重置系统 (清空所有缓存数据)</button>
+    <div id="out">报告将显示在这里...</div>
+    
+    <div style="text-align:center; margin-top:30px;">
+        <button onclick="localStorage.clear(); location.reload();" style="background:#dc2626; width:auto; font-size:12px;">清空所有数据并刷新</button>
     </div>
 </div>
 
@@ -46,18 +55,23 @@
     const KEY = "AIzaSyArJg6XfI4gWHhK46xsMc0zHUdJlfa98QY";
     let productDB = JSON.parse(localStorage.getItem('insurance_docs')) || [];
 
-    // Initialize PDF.js
+    // PDF Worker Config
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     async function handleUpload() {
-        const fileInput = document.getElementById('files');
+        // Try to get files from either input
+        const folderFiles = document.getElementById('folderInput').files;
+        const individualFiles = document.getElementById('fileInput').files;
+        const files = folderFiles.length > 0 ? folderFiles : individualFiles;
+
         const status = document.getElementById('status');
-        const files = fileInput.files;
+        const upBtn = document.getElementById('upBtn');
 
-        if (files.length === 0) return alert("请先选择文件或文件夹");
+        if (files.length === 0) return alert("未检测到文件！请先选择文件夹或文件。");
 
-        status.innerText = "⏳ 正在读取文件...";
+        upBtn.disabled = true;
+        status.innerText = "⏳ 正在提取 PDF 文本...";
         let count = 0;
 
         for (let file of files) {
@@ -66,27 +80,28 @@
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
                     let text = "";
-                    // Read first 2 pages (to keep it fast and light)
-                    for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+                    // Read top 3 pages
+                    for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
-                        text += content.items.map(item => item.str).join(" ");
+                        text += content.items.map(it => it.str).join(" ");
                     }
-                    productDB.push({ name: file.name, content: text.slice(0, 2500) });
+                    productDB.push({ name: file.name, content: text.slice(0, 3000) });
                     count++;
-                    status.innerText = `⏳ 已解析 ${count} 个 PDF...`;
+                    status.innerText = `⏳ 正在解析第 ${count} 个文件...`;
                 } catch (e) {
-                    console.error("无法解析:", file.name);
+                    console.error("解析错误:", file.name);
                 }
             }
         }
 
         try {
             localStorage.setItem('insurance_docs', JSON.stringify(productDB));
-            status.innerText = `✅ 成功导入 ${count} 个产品！当前总数: ${productDB.length}`;
+            status.innerText = `✅ 成功！当前库中共有 ${productDB.length} 个产品。`;
         } catch (e) {
-            alert("存储空间已满！请点击下方的重置按钮清空数据后再试。");
+            alert("浏览器存储空间不足，请先清空数据。");
         }
+        upBtn.disabled = false;
     }
 
     async function runAnalysis() {
@@ -94,15 +109,16 @@
         const out = document.getElementById('out');
         const reqs = document.getElementById('reqs').value;
 
-        if (productDB.length === 0) return alert("请先上传 PDF 产品");
-        if (!reqs) return alert("请输入客户需求");
+        if (productDB.length === 0) return alert("库里没东西，请先上传 PDF。");
+        if (!reqs) return alert("请输入需求。");
 
         btn.disabled = true;
-        btn.innerText = "🚀 AI 2.0 正在分析中...";
+        btn.innerText = "🚀 AI 2.0 正在生成专家报告...";
 
-        const prompt = `你是一位保险专家。需求: ${reqs}。以下是可选产品内容: ${productDB.map(d => d.content).join("\n")}`;
+        const prompt = `你是一位顶级保险专家。需求: ${reqs}。库中产品数据如下: ${productDB.map(d => d.content).join("\n")}`;
 
         try {
+            // Using your confirmed working Gemini 2.0 Flash
             const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -114,20 +130,10 @@
 
             out.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
         } catch (e) {
-            alert("分析失败: " + e.message);
+            alert("生成失败: " + e.message);
         } finally {
             btn.disabled = false;
-            btn.innerText = "开始生成报告";
-        }
-    }
-
-    function resetSystem() {
-        if (confirm("确定要清空所有已上传的产品数据吗？")) {
-            localStorage.removeItem('insurance_docs');
-            productDB = [];
-            document.getElementById('status').innerText = "系统已重置";
-            document.getElementById('out').innerHTML = "";
-            location.reload();
+            btn.innerText = "生成智能建议报告";
         }
     }
 </script>
