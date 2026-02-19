@@ -3,329 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人保险顾问系统</title>
+    <title>个人保险顾问 AI 系统</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
     <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-        }
-
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        nav {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            background: #1e40af;
-            padding: 0.5rem;
-        }
-
-        .nav-btn {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: 0.3s;
-        }
-
-        .nav-btn.active, .nav-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        main {
-            max-width: 1000px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-
-        .section {
-            background: var(--card);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            display: none;
-        }
-
+        :root { --primary: #2563eb; --secondary: #64748b; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; }
+        nav { display: flex; justify-content: center; background: #1e40af; padding: 0.5rem; gap: 10px; }
+        .nav-btn { background: transparent; border: none; color: white; padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; }
+        .nav-btn.active { background: rgba(255,255,255,0.2); }
+        main { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .section { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
         .section.active { display: block; }
-
-        .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-        }
-
+        .form-group { margin-bottom: 1rem; }
+        input, textarea, select { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1rem; }
         .btn-primary:disabled { background: #94a3b8; }
-
-        /* Report Styles */
-        #report-display {
-            margin-top: 2rem;
-            padding: 2rem;
-            background: white;
-            border-top: 5px solid var(--primary);
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        }
-
-        #report-content {
-            color: #334155;
-            margin-top: 1rem;
-        }
-
-        #report-content h1, #report-content h2 { color: var(--primary); }
-        
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .product-card {
-            border: 1px solid #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-        }
-
-        .delete-btn { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 0.8rem; }
-
-        @media print {
-            header, nav, #upload, #library, .form-group, button { display: none !important; }
-            #report-display { display: block !important; border: none; box-shadow: none; }
-        }
+        #report-display { margin-top: 2rem; padding: 1.5rem; border-top: 4px solid var(--primary); background: #f0f7ff; }
+        .product-card { border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; position: relative; }
+        .delete-btn { color: #ef4444; cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-content">
-            <h1>🏥 保险顾问 AI 系统</h1>
-            <span>离线存储 + 云端分析</span>
-        </div>
-    </header>
-
+    <header><h1>🏥 保险顾问 AI (直连版)</h1></header>
     <nav>
-        <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
-        <button onclick="showSection('library')" class="nav-btn">产品库</button>
-        <button onclick="showSection('client')" class="nav-btn">智能分析</button>
+        <button onclick="showSection('upload', this)" class="nav-btn active">1. 上传库</button>
+        <button onclick="showSection('library', this)" class="nav-btn">2. 产品库</button>
+        <button onclick="showSection('client', this)" class="nav-btn">3. 开始分析</button>
     </nav>
 
     <main>
         <section id="upload" class="section active">
-            <h2>📁 导入保险文件 (PDF)</h2>
-            <form id="upload-form">
-                <div class="form-group">
-                    <label>保险公司:</label>
-                    <input type="text" id="company-name" placeholder="如：平安保险" required>
-                </div>
-                <div class="form-group">
-                    <label>选择文件夹/文件:</label>
-                    <input type="file" id="product-file" webkitdirectory directory multiple required>
-                </div>
-                <button type="submit" class="btn-primary">保存到本地产品库</button>
-            </form>
-            <div id="upload-status" style="margin-top:10px; color: green; display:none;"></div>
+            <h2>📁 导入保险 PDF</h2>
+            <div class="form-group">
+                <label>公司名称:</label>
+                <input type="text" id="company-name" placeholder="如：平安保险">
+            </div>
+            <div class="form-group">
+                <label>选择 PDF 文件:</label>
+                <input type="file" id="product-file" multiple accept=".pdf">
+            </div>
+            <button onclick="handleUpload()" class="btn-primary" id="up-btn">保存到本地</button>
         </section>
 
         <section id="library" class="section">
             <h2>📚 我的产品库</h2>
-            <button onclick="clearLibrary()" style="margin-bottom:10px; color:red; border:none; background:none; cursor:pointer;">清空库</button>
-            <div id="products-list" class="products-grid"></div>
+            <div id="products-list"></div>
+            <button onclick="clearLibrary()" style="color:red; cursor:pointer; background:none; border:none;">[清空所有数据]</button>
         </section>
 
         <section id="client" class="section">
-            <h2>📋 客户需求与 AI 分析</h2>
-            <div class="form-group">
-                <label>客户姓名:</label>
-                <input type="text" id="client-name" placeholder="客户姓名">
-            </div>
-            <div class="form-group">
-                <label>分析需求:</label>
-                <textarea id="client-requirements" rows="4" placeholder="例如：30岁男性，年预算5000元，关注重疾和住院医疗。"></textarea>
-            </div>
-            <button class="btn-primary" id="analyze-btn" onclick="runAIAnalysis()">生成智能建议报告</button>
-
-            <div id="report-display" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>📊 AI 方案建议书</h3>
-                    <button onclick="window.print()" style="padding: 5px 10px; cursor: pointer;">打印为 PDF</button>
-                </div>
+            <h2>📋 客户分析</h2>
+            <input type="text" id="client-name" placeholder="客户姓名" style="margin-bottom:1rem;">
+            <textarea id="client-requirements" rows="4" placeholder="输入客户具体需求..."></textarea>
+            <button class="btn-primary" id="analyze-btn" onclick="runAI()">生成 AI 建议报告</button>
+            <div id="report-display" style="display:none;">
                 <div id="report-content"></div>
             </div>
         </section>
     </main>
 
     <script>
-    // 1. Setup PDF.js
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        const GEMINI_KEY = "AIzaSyCFzpAWoCorwVgcRwKqiDDwldzz7eJnBGc";
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-    let productLibrary = JSON.parse(localStorage.getItem('insurance_docs')) || [];
-    
-    // --- PLAN B: Direct Key ---
-    const GEMINI_API_KEY = "AIzaSyCFzpAWoCorwVgcRwKqiDDwldzz7eJnBGc";
+        let productLibrary = JSON.parse(localStorage.getItem('insurance_docs')) || [];
 
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if (event) event.currentTarget.classList.add('active');
-        if (id === 'library') renderLibrary();
-    }
-
-    async function extractTextFromPDF(file) {
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-            let text = "";
-            const pages = Math.min(pdf.numPages, 3);
-            for (let i = 1; i <= pages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map(item => item.str).join(" ");
-            }
-            return text;
-        } catch (e) { return ""; }
-    }
-
-    document.getElementById('upload-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = this.querySelector('button');
-        btn.innerText = "⏳ 正在解析 PDF...";
-        btn.disabled = true;
-
-        const company = document.getElementById('company-name').value;
-        const files = document.getElementById('product-file').files;
-        
-        for (let file of files) {
-            if (file.name.toLowerCase().endsWith('.pdf')) {
-                const text = await extractTextFromPDF(file);
-                productLibrary.push({
-                    id: Date.now() + Math.random(),
-                    fileName: file.name,
-                    company: company,
-                    content: text.substring(0, 3000)
-                });
-            }
+        function showSection(id, btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
+            if(id === 'library') renderLibrary();
         }
-        localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
-        btn.innerText = "保存到本地产品库";
-        btn.disabled = false;
-        document.getElementById('upload-status').innerText = "导入成功！";
-        document.getElementById('upload-status').style.display = "block";
-    });
 
-    // --- PLAN B: DIRECT AI CALL ---
-    async function runAIAnalysis() {
-        const name = document.getElementById('client-name').value;
-        const reqs = document.getElementById('client-requirements').value;
-        const btn = document.getElementById('analyze-btn');
-        const display = document.getElementById('report-display');
-        const content = document.getElementById('report-content');
-
-        if (productLibrary.length === 0) return alert("请先上传保险产品 PDF");
-        if (!reqs) return alert("请输入客户需求");
-
-        btn.innerText = "🧠 浏览器正在直连 AI 分析中...";
-        btn.disabled = true;
-
-        const context = productLibrary.map(p => `[产品:${p.company}-${p.fileName}] 内容:${p.content}`).join("\n\n");
-        const prompt = `你是一位保险专家。客户：${name}。需求：${reqs}。请根据以下库中产品写一份专业报告：${context}`;
-
-        try {
-            // We call Google directly from the browser here
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-
-            const data = await response.json();
+        async function handleUpload() {
+            const files = document.getElementById('product-file').files;
+            const company = document.getElementById('company-name').value || "未知公司";
+            const btn = document.getElementById('up-btn');
             
-            if (data.error) throw new Error(data.error.message);
+            if(!files.length) return alert("请选择文件");
+            btn.disabled = true;
+            btn.innerText = "解析中...";
 
-            const markdownText = data.candidates[0].content.parts[0].text;
-            
-            display.style.display = 'block';
-            content.innerHTML = marked.parse(markdownText);
-            display.scrollIntoView({ behavior: 'smooth' });
-
-        } catch (error) {
-            console.error(error);
-            alert("AI 分析失败: " + error.message);
-        } finally {
-            btn.innerText = "生成智能建议报告";
+            for (let file of files) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let text = "";
+                for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(" ");
+                }
+                productLibrary.push({ id: Date.now()+Math.random(), company, fileName: file.name, content: text.slice(0, 3000) });
+            }
+            localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
             btn.disabled = false;
+            btn.innerText = "保存到本地";
+            alert("上传成功！");
         }
-    }
 
-    function renderLibrary() {
-        const list = document.getElementById('products-list');
-        list.innerHTML = productLibrary.length ? '' : '<p>暂无文件</p>';
-        productLibrary.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `<strong>${item.fileName}</strong><br><small>${item.company}</small><br>
-            <span class="delete-btn" onclick="deleteProduct(${item.id})">删除</span>`;
-            list.appendChild(card);
-        });
-    }
+        function renderLibrary() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = productLibrary.length ? '' : '库中无数据';
+            productLibrary.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                div.innerHTML = `<strong>${item.company}</strong> - ${item.fileName} <br>
+                <span class="delete-btn" onclick="deleteItem(${item.id})">删除</span>`;
+                list.appendChild(div);
+            });
+        }
 
-    function deleteProduct(id) {
-        productLibrary = productLibrary.filter(p => p.id !== id);
-        localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
-        renderLibrary();
-    }
-
-    function clearLibrary() {
-        if(confirm('清空库？')) {
-            productLibrary = [];
-            localStorage.removeItem('insurance_docs');
+        function deleteItem(id) {
+            productLibrary = productLibrary.filter(p => p.id !== id);
+            localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
             renderLibrary();
         }
-    }
-</script>
+
+        function clearLibrary() { if(confirm('确定清空？')) { productLibrary = []; localStorage.clear(); renderLibrary(); } }
+
+        async function runAI() {
+            const reqs = document.getElementById('client-requirements').value;
+            const btn = document.getElementById('analyze-btn');
+            if(!productLibrary.length || !reqs) return alert("请确保有产品数据和客户需求");
+
+            btn.disabled = true;
+            btn.innerText = "AI 分析中 (直连模式)...";
+
+            const context = productLibrary.map(p => `产品:${p.company}-${p.fileName}, 内容:${p.content}`).join("\n");
+            const prompt = `你是一个保险专家。请根据以下产品库建议最合适的方案。需求：${reqs}。库：${context}`;
+
+            try {
+                // 注意：这里直接访问 Google 接口，不经过 Vercel api 文件夹
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await resp.json();
+                const md = data.candidates[0].content.parts[0].text;
+                document.getElementById('report-display').style.display = 'block';
+                document.getElementById('report-content').innerHTML = marked.parse(md);
+            } catch (e) {
+                alert("分析失败：" + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "生成 AI 建议报告";
+            }
+        }
+    </script>
+</body>
+</html>
