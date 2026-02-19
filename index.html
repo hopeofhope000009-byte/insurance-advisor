@@ -3,35 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保险 AI 顾问 - 专业版</title>
+    <title>保险顾问 AI - 最终修复版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
-        header { background: var(--primary); color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        nav { display: flex; justify-content: center; background: #1e40af; padding: 0.5rem; gap: 10px; sticky: top; }
-        .nav-btn { background: transparent; border: none; color: white; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 4px; font-weight: 500; }
-        .nav-btn.active { background: rgba(255,255,255,0.2); border: 1px solid white; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; line-height: 1.6; }
+        header { background: var(--primary); color: white; padding: 1.5rem; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        nav { display: flex; justify-content: center; background: #1e40af; padding: 0.5rem; gap: 10px; position: sticky; top: 0; z-index: 100; }
+        .nav-btn { background: transparent; border: none; color: white; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 4px; font-weight: 500; transition: 0.2s; }
+        .nav-btn.active { background: rgba(255,255,255,0.2); box-shadow: inset 0 0 0 1px white; }
         main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-        .section { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-        .section.active { display: block; }
+        .section { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #475569; }
         input, textarea { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: bold; }
         .btn-primary:hover { background: #1d4ed8; }
         .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
-        #report-display { margin-top: 2rem; padding: 1.5rem; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0; line-height: 1.8; }
-        .product-card { background: #f1f5f9; padding: 1rem; margin-bottom: 0.8rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        #report-display { margin-top: 2rem; padding: 2rem; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0; }
+        .product-card { background: #f8fafc; padding: 1rem; margin-bottom: 0.8rem; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .delete-btn { color: #ef4444; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
-        .loading-ring { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right: 10px; vertical-align: middle; }
+        .loading-ring { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; margin-right: 10px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <header><h1>🏥 个人保险顾问 AI 系统</h1></header>
+    
     <nav>
         <button onclick="showSection('upload', this)" class="nav-btn active">1. 批量上传</button>
         <button onclick="showSection('library', this)" class="nav-btn">2. 产品库</button>
@@ -41,23 +43,23 @@
     <main>
         <section id="upload" class="section active">
             <h2>📁 批量导入文件夹</h2>
-            <p style="color: #64748b;">选择包含多个保险 PDF 的文件夹，系统将自动批量读取内容。</p>
+            <p style="color: #64748b;">支持选择整个文件夹。系统将自动读取文件夹内的所有 PDF 文件。</p>
             <div class="form-group">
-                <label>所属保险公司 (例如：平安、友邦):</label>
-                <input type="text" id="company-name" placeholder="输入公司名称">
+                <label>所属保险公司:</label>
+                <input type="text" id="company-name" placeholder="如：中国平安、友邦保险">
             </div>
             <div class="form-group">
                 <label>选择文件夹:</label>
                 <input type="file" id="product-file" webkitdirectory directory multiple>
             </div>
-            <button onclick="handleUpload()" class="btn-primary" id="up-btn">开始批量导入</button>
-            <div id="up-progress" style="margin-top:15px; font-weight:bold; color:var(--primary);"></div>
+            <button onclick="handleUpload()" class="btn-primary" id="up-btn">开始批量解析并导入</button>
+            <div id="up-progress" style="margin-top:15px; font-weight:600; color:var(--primary);"></div>
         </section>
 
         <section id="library" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>📚 当前产品库</h2>
-                <button onclick="clearLibrary()" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:bold;">[清空全部]</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                <h2>📚 产品库状态</h2>
+                <button onclick="clearLibrary()" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:bold;">[清空库]</button>
             </div>
             <div id="products-list"></div>
         </section>
@@ -65,15 +67,15 @@
         <section id="client" class="section">
             <h2>📋 客户需求分析</h2>
             <div class="form-group">
-                <label>客户背景/需求:</label>
-                <textarea id="client-requirements" rows="5" placeholder="例如：35岁女性，预算1万/年，想要覆盖重疾和高端医疗..."></textarea>
+                <label>客户具体需求:</label>
+                <textarea id="client-requirements" rows="6" placeholder="请描述客户的情况（年龄、预算、保障偏好等）..."></textarea>
             </div>
-            <button class="btn-primary" id="analyze-btn" onclick="runAI()">生成专家建议报告</button>
+            <button class="btn-primary" id="analyze-btn" onclick="runAI()">生成专业分析报告</button>
             
             <div id="report-display" style="display:none;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <h3 style="margin:0;">📊 AI 分析结果</h3>
-                    <button onclick="window.print()" style="cursor:pointer;">打印/转PDF</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:20px;">
+                    <h3 style="margin:0;">📊 AI 方案建议</h3>
+                    <button onclick="window.print()" style="padding:5px 15px; cursor:pointer;">打印为 PDF</button>
                 </div>
                 <div id="report-content"></div>
             </div>
@@ -96,13 +98,12 @@
         }
 
         async function handleUpload() {
-            const fileInput = document.getElementById('product-file');
-            const files = fileInput.files;
-            const company = document.getElementById('company-name').value || "未命名公司";
+            const files = document.getElementById('product-file').files;
+            const company = document.getElementById('company-name').value || "默认公司";
             const btn = document.getElementById('up-btn');
             const progress = document.getElementById('up-progress');
             
-            if(!files.length) return alert("请先选择文件夹或文件！");
+            if(!files.length) return alert("请选择包含 PDF 的文件夹！");
             
             btn.disabled = true;
             let successCount = 0;
@@ -115,7 +116,7 @@
                         const arrayBuffer = await file.arrayBuffer();
                         const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
                         let text = "";
-                        // Read up to 3 pages to stay within local storage limits
+                        // Capture first 3 pages to prevent localStorage overflow
                         for (let p = 1; p <= Math.min(pdf.numPages, 3); p++) {
                             const page = await pdf.getPage(p);
                             const content = await page.getTextContent();
@@ -128,22 +129,18 @@
                             content: text.slice(0, 3500) 
                         });
                         successCount++;
-                    } catch (err) {
-                        console.error("Error reading file:", file.name);
-                    }
+                    } catch (err) { console.error("PDF Read Error:", file.name); }
                 }
             }
 
             localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
             btn.disabled = false;
-            btn.innerText = "开始批量导入";
-            progress.innerText = `✅ 成功导入 ${successCount} 个 PDF 文件！`;
-            fileInput.value = ""; // Reset input
+            progress.innerText = `✅ 成功导入 ${successCount} 个文件！`;
         }
 
         function renderLibrary() {
             const list = document.getElementById('products-list');
-            list.innerHTML = productLibrary.length ? '' : '<p style="color:gray;">库中暂无产品，请先上传。</p>';
+            list.innerHTML = productLibrary.length ? '' : '<p>库中没有产品，请先上传。</p>';
             productLibrary.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'product-card';
@@ -159,36 +156,35 @@
             renderLibrary();
         }
 
-        function clearLibrary() { if(confirm('确定要清空所有已保存的产品吗？')) { productLibrary = []; localStorage.removeItem('insurance_docs'); renderLibrary(); } }
+        function clearLibrary() { if(confirm('清空所有数据？')) { productLibrary = []; localStorage.removeItem('insurance_docs'); renderLibrary(); } }
 
+        // THE CORE AI FUNCTION - FIXED URL AND ERROR HANDLING
         async function runAI() {
             const reqs = document.getElementById('client-requirements').value;
             const btn = document.getElementById('analyze-btn');
             const reportDiv = document.getElementById('report-display');
             const contentDiv = document.getElementById('report-content');
 
-            if(!productLibrary.length) return alert("产品库是空的，请先上传保险文件。");
+            if(!productLibrary.length) return alert("库中无产品，无法分析。");
             if(!reqs) return alert("请输入客户需求。");
 
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-ring"></span> AI 正在深度分析中...';
+            btn.innerHTML = '<span class="loading-ring"></span> AI 正在分析库文件并生成报告...';
 
-            const context = productLibrary.map(p => `产品[公司:${p.company}, 文件名:${p.fileName}] 内容摘要: ${p.content}`).join("\n---\n");
+            const context = productLibrary.map(p => `[公司:${p.company}, 文件:${p.fileName}] 内容:${p.content}`).join("\n---\n");
             
-            const prompt = `你是一位资深保险专家。
+            const prompt = `你是一位保险专家。
             客户背景需求：${reqs}
             
-            现有产品库内容：
+            产品库：
             ${context}
             
             任务：
-            1. 从产品库中挑选最匹配的产品。
-            2. 给出详细的推荐理由。
-            3. 指出该产品的核心优缺点。
-            4. 给出最终投保建议。`;
+            请从产品库中选出最匹配的产品，并给出详细的推荐理由和对比分析。`;
 
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                // FIXED ENDPOINT: Using v1 stable
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -196,23 +192,24 @@
 
                 const data = await resp.json();
 
-                // SAFETY CHECK: Ensure data and candidates exist
-                if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+                if (data.error) {
+                    throw new Error(data.error.message || "API 错误");
+                }
+
+                if (data && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
                     const md = data.candidates[0].content.parts[0].text;
                     reportDiv.style.display = 'block';
                     contentDiv.innerHTML = marked.parse(md);
                     reportDiv.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    // This handles the "Undefined" error by showing exactly what the AI sent back
-                    const errorMsg = data.error ? data.error.message : "AI 返回了空结果，请检查 API Key 或稍后再试。";
-                    throw new Error(errorMsg);
+                    throw new Error("AI 响应格式异常，请重试。");
                 }
             } catch (e) {
                 alert("分析失败：" + e.message);
-                console.error("Full Error Info:", e);
+                console.error("AI Error:", e);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "生成专家建议报告";
+                btn.innerText = "生成专业分析报告";
             }
         }
     </script>
