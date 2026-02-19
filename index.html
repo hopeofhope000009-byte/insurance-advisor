@@ -4,9 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insurance Advisor</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>Welcome to the Insurance Advisor Web Application</h1>
-    <p>Your go-to solution for insurance needs.</p>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#upload-products">Upload Products</a></li>
+                <li><a href="#client-request">Client Request</a></li>
+                <li><a href="#results">Results</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="upload-products">
+            <h2>Upload Products</h2>
+            <form id="upload-form">
+                <label for="product-file">Choose a PDF file:</label>
+                <input type="file" id="product-file" accept="application/pdf" required>
+                <button type="submit">Upload</button>
+            </form>
+        </section>
+        <section id="client-request">
+            <h2>Client Request Form</h2>
+            <form id="client-form">
+                <label for="name">Name:</label>
+                <input type="text" id="name" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+                <label for="coverage-needs">Coverage Needs:</label>
+                <textarea id="coverage-needs" required></textarea>
+                <label for="medical-history">Medical History:</label>
+                <textarea id="medical-history"></textarea>
+                <button type="submit">Submit Request</button>
+            </form>
+        </section>
+        <section id="results">
+            <h2>Results</h2>
+            <div id="recommendations">
+                <h3>Recommendations</h3>
+                <!-- dynamic product recommendations will be shown here -->
+            </div>
+            <table id="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Coverage</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- dynamic comparison data will be populated here -->
+                </tbody>
+            </table>
+            <button id="download-button">Download Report</button>
+            <button id="share-button">Share Results</button>
+        </section>
+        <section id="login">
+            <h2>Login</h2>
+            <form id="login-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Insurance Advisor</p>
+    </footer>
 </body>
 </html>
