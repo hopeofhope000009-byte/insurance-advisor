@@ -3,248 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保险顾问</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>个人保险顾问系统</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="script.js" defer></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        nav {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            background: #1e40af;
+            padding: 0.5rem;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+
+        .nav-btn.active, .nav-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .section {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .section.active { display: block; }
+
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .btn-primary:hover { opacity: 0.9; }
+
+        .status-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            background: #dcfce7;
+            color: #166534;
+            display: none;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .product-card {
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .delete-btn {
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+        }
+
+        footer { text-align: center; margin-top: 4rem; color: var(--secondary); font-size: 0.9rem; }
+    </style>
 </head>
 <body>
-    <!-- 登录界面 -->
-    <div id="login-section" class="modal-overlay">
-        <div class="modal-content">
-            <h2>登录</h2>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-email">邮箱:</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">密码:</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                <button type="submit" class="btn-primary">登录</button>
-                <button type="button" class="btn-secondary" onclick="toggleSignup()">注册新账户</button>
-            </form>
-        </div>
-    </div>
 
-    <!-- 注册界面 -->
-    <div id="signup-section" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h2>创建账户</h2>
-            <form id="signup-form">
-                <div class="form-group">
-                    <label for="signup-email">邮箱:</label>
-                    <input type="email" id="signup-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">密码:</label>
-                    <input type="password" id="signup-password" required>
-                </div>
-                <div class="form-group">
-                    <label for="signup-confirm">确认密码:</label>
-                    <input type="password" id="signup-confirm" required>
-                </div>
-                <button type="submit" class="btn-primary">注册</button>
-                <button type="button" class="btn-secondary" onclick="toggleSignup()">返回登录</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 主界面 -->
-    <div id="main-app" style="display: none;">
+    <div id="main-app">
         <header>
             <div class="header-content">
-                <h1>🏥 保险顾问系统</h1>
-                <div class="user-info">
-                    <span id="user-name"></span>
-                    <button onclick="logout()" class="btn-logout">登出</button>
-                </div>
+                <h1>🏥 保险顾问系统 (个人离线版)</h1>
+                <span>管理员模式</span>
             </div>
-            <nav>
-                <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
-                <button onclick="showSection('client')" class="nav-btn">客户请求</button>
-                <button onclick="showSection('results')" class="nav-btn">推荐结果</button>
-                <button onclick="showSection('library')" class="nav-btn">产品库</button>
-            </nav>
         </header>
+        <nav>
+            <button onclick="showSection('upload')" class="nav-btn active">上传产品</button>
+            <button onclick="showSection('library')" class="nav-btn">产品库</button>
+            <button onclick="showSection('client')" class="nav-btn">客户需求</button>
+        </nav>
 
         <main>
-            <!-- 上传产品部分 -->
-            <section id="upload" class="section">
-                <h2>📁 上传保险产品</h2>
-                <div class="upload-container">
-                    <form id="upload-form" class="upload-form">
-                        <div class="form-group">
-                            <label>选择保险公司:</label>
-                            <input type="text" id="company-name" placeholder="请输入保险公司名称" required>
-                        </div>
-                        <div class="form-group">
-                            <label>选择PDF文件或文件夹:</label>
-                            <input type="file" id="product-file" accept=".pdf" multiple required>
-                            <small>支持多个文件批量上传</small>
-                        </div>
-                        <div class="form-group">
-                            <label>产品类型:</label>
-                            <select id="product-type" required>
-                                <option value="">-- 选择产品类型 --</option>
-                                <option value="health">健康保险</option>
-                                <option value="life">人寿保险</option>
-                                <option value="accident">意外保险</option>
-                                <option value="property">财产保险</option>
-                                <option value="auto">汽车保险</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-primary">上传文件</button>
-                    </form>
-                    <div id="upload-status" class="status-message"></div>
-                </div>
-            </section>
-
-            <!-- 客户请求部分 -->
-            <section id="client" class="section" style="display: none;">
-                <h2>📋 客户需求表</h2>
-                <form id="client-form" class="client-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="client-name">客户姓名:</label>
-                            <input type="text" id="client-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="client-age">年龄:</label>
-                            <input type="number" id="client-age" min="18" max="100" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="client-email">邮箱:</label>
-                            <input type="email" id="client-email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="client-phone">电话:</label>
-                            <input type="tel" id="client-phone" required>
-                        </div>
-                    </div>
-
+            <section id="upload" class="section active">
+                <h2>📁 批量上传文件夹</h2>
+                <p>选择一个包含多个保险 PDF 文件的文件夹，系统将自动识别并保存到本地库中。</p>
+                <form id="upload-form">
                     <div class="form-group">
-                        <label for="coverage-needs">保险需求:</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox" value="health" class="coverage-type"> 健康保险</label>
-                            <label><input type="checkbox" value="life" class="coverage-type"> 人寿保险</label>
-                            <label><input type="checkbox" value="accident" class="coverage-type"> 意外保险</label>
-                            <label><input type="checkbox" value="property" class="coverage-type"> 财产保险</label>
-                            <label><input type="checkbox" value="auto" class="coverage-type"> 汽车保险</label>
-                        </div>
+                        <label>保险公司名称:</label>
+                        <input type="text" id="company-name" placeholder="例如：平安保险" required>
                     </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="budget">预算范围 (月付/年付):</label>
-                            <input type="text" id="budget" placeholder="例: 500-1000元/月" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="coverage-amount">保额需求:</label>
-                            <input type="text" id="coverage-amount" placeholder="例: 50万" required>
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label for="medical-history">医疗历史及特殊情况:</label>
-                        <textarea id="medical-history" placeholder="请详细说明任何重要的健康信息" rows="4"></textarea>
+                        <label>选择文件夹:</label>
+                        <input type="file" id="product-file" webkitdirectory directory multiple required>
                     </div>
-
                     <div class="form-group">
-                        <label for="special-requirements">特殊需求:</label>
-                        <textarea id="special-requirements" placeholder="其他特殊需求或偏好" rows="3"></textarea>
+                        <label>产品大类:</label>
+                        <select id="product-type">
+                            <option value="健康险">健康保险</option>
+                            <option value="寿险">人寿保险</option>
+                            <option value="意外险">意外保险</option>
+                            <option value="其他">其他</option>
+                        </select>
                     </div>
-
-                    <button type="submit" class="btn-primary btn-large">搜索最佳方案</button>
+                    <button type="submit" class="btn-primary">保存到本地库</button>
                 </form>
+                <div id="upload-status" class="status-message"></div>
             </section>
 
-            <!-- 推荐结果部分 -->
-            <section id="results" class="section" style="display: none;">
-                <h2>💡 推荐方案</h2>
-                <div id="results-container">
-                    <div id="recommendations" class="recommendations-list">
-                        <!-- 推荐产品将动态显示在这里 -->
+            <section id="library" class="section">
+                <h2>📚 我的产品库</h2>
+                <button onclick="clearLibrary()" style="color: red; margin-bottom: 10px; cursor:pointer;">清空所有库文件</button>
+                <div id="products-list" class="products-grid">
                     </div>
-                    
-                    <div id="comparison-section" style="display: none;">
-                        <h3>产品对比表</h3>
-                        <div class="table-responsive">
-                            <table id="comparison-table" class="comparison-table">
-                                <thead>
-                                    <tr>
-                                        <th>产品名称</th>
-                                        <th>保险公司</th>
-                                        <th>保额</th>
-                                        <th>保费</th>
-                                        <th>保障范围</th>
-                                        <th>评分</th>
-                                        <th>详情</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- 对比数据将动态填充 -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div id="summary-section" style="display: none;">
-                        <h3>最佳推荐总结</h3>
-                        <div id="summary-content" class="summary-box"></div>
-                    </div>
-
-                    <div class="action-buttons">
-                        <button onclick="downloadReport()" class="btn-primary">📥 下载报告</button>
-                        <button onclick="generateShareLink()" class="btn-secondary">🔗 生成分享链接</button>
-                        <button onclick="sendEmail()" class="btn-secondary">📧 发送给客户</button>
-                        <button onclick="printReport()" class="btn-secondary">🖨️ 打印报告</button>
-                    </div>
-
-                    <div id="share-link-container" style="display: none;">
-                        <h4>分享链接:</h4>
-                        <div class="share-link">
-                            <input type="text" id="share-link-input" readonly>
-                            <button onclick="copyShareLink()" class="btn-small">复制链接</button>
-                        </div>
-                        <p class="info-text">⏰ 链接将在7天后过期</p>
-                    </div>
-                </div>
             </section>
 
-            <!-- 产品库部分 -->
-            <section id="library" class="section" style="display: none;">
-                <h2>📚 保险产品库</h2>
-                <div class="library-container">
-                    <div class="filters">
-                        <select id="filter-company" onchange="filterProducts()">
-                            <option value="">所有公司</option>
-                        </select>
-                        <select id="filter-type" onchange="filterProducts()">
-                            <option value="">所有类型</option>
-                            <option value="health">健康保险</option>
-                            <option value="life">人寿保险</option>
-                            <option value="accident">意外保险</option>
-                            <option value="property">财产保险</option>
-                            <option value="auto">汽车保险</option>
-                        </select>
-                        <input type="text" id="search-product" placeholder="搜索产品..." onkeyup="filterProducts()">
-                    </div>
-                    <div id="products-list" class="products-grid">
-                        <!-- 产品卡片将动态显示 -->
-                    </div>
+            <section id="client" class="section">
+                <h2>📋 客户分析</h2>
+                <div class="form-group">
+                    <label>客户姓名:</label>
+                    <input type="text" placeholder="输入客户姓名">
                 </div>
+                <div class="form-group">
+                    <label>分析需求:</label>
+                    <textarea rows="4" placeholder="例如：30岁男性，预算5000/年，需要重疾险..."></textarea>
+                </div>
+                <button class="btn-primary" onclick="alert('分析功能需对接AI接口，目前已保存需求')">生成分析报告</button>
             </section>
         </main>
 
         <footer>
-            <p>&copy; 2026 保险顾问系统 | 仅供个人使用 | 严格保密</p>
+            <p>&copy; 2026 个人保险顾问系统 | 数据存储于本地浏览器</p>
         </footer>
     </div>
+
+    <script>
+        // Data Management using LocalStorage
+        let productLibrary = JSON.parse(localStorage.getItem('insurance_docs')) || [];
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(id === 'library') renderLibrary();
+        }
+
+        // Handle folder upload
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const company = document.getElementById('company-name').value;
+            const type = document.getElementById('product-type').value;
+            const files = document.getElementById('product-file').files;
+            
+            let addedCount = 0;
+            for (let file of files) {
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    const product = {
+                        id: Date.now() + Math.random(),
+                        fileName: file.name,
+                        company: company,
+                        type: type,
+                        date: new Date().toLocaleDateString()
+                    };
+                    productLibrary.push(product);
+                    addedCount++;
+                }
+            }
+
+            localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
+            
+            const status = document.getElementById('upload-status');
+            status.style.display = 'block';
+            status.innerText = `成功导入 ${addedCount} 个文件！请前往产品库查看。`;
+            this.reset();
+        });
+
+        function renderLibrary() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = '';
+            
+            if (productLibrary.length === 0) {
+                list.innerHTML = '<p>库中暂无产品，请先上传。</p>';
+                return;
+            }
+
+            productLibrary.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <strong>${item.fileName}</strong><br>
+                    <small>公司: ${item.company}</small><br>
+                    <small>类型: ${item.type}</small><br>
+                    <span class="delete-btn" onclick="deleteProduct(${item.id})">删除</span>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function deleteProduct(id) {
+            productLibrary = productLibrary.filter(p => p.id !== id);
+            localStorage.setItem('insurance_docs', JSON.stringify(productLibrary));
+            renderLibrary();
+        }
+
+        function clearLibrary() {
+            if(confirm('确定要清空所有产品吗？')) {
+                productLibrary = [];
+                localStorage.removeItem('insurance_docs');
+                renderLibrary();
+            }
+        }
+
+        // Initialize view
+        renderLibrary();
+    </script>
 </body>
 </html>
