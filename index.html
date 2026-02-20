@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>AI 保险专家 - 稳定版</title>
+
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js"></script>
+
+    <!-- Markdown 渲染 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- XSS 过滤 -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background: #f0f4f8; padding: 20px; line-height: 1.5; }
         .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -46,14 +55,14 @@
 </div>
 
 <script>
-    // 使用你最新的 API KEY
+    // ⚠️ 注意：真实环境请不要把 API Key 放前端
     const KEY = "AIzaSyArJg6XfI4gWHhK46xsMc0zHUdJlfa98QY";
-    
+
     // 初始化本地存储
     let productDB = JSON.parse(localStorage.getItem('insurance_docs')) || [];
 
-    // PDF.js 配置
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    // PDF.js 引用修复
+    const pdfjsLib = window['pdfjsLib'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     // 处理文件上传
@@ -74,15 +83,17 @@
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
                     let text = "";
-                    // 只读取前 2 页，防止单个产品内容过长导致 AI 拒收
+
                     for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
                         text += content.items.map(it => it.str).join(" ");
                     }
+
                     productDB.push({ name: file.name, content: text.slice(0, 2500) });
                     count++;
                     status.innerText = `⏳ 成功解析第 ${count} 个产品...`;
+
                 } catch (e) {
                     console.error("解析失败:", file.name);
                 }
@@ -95,6 +106,7 @@
         } catch (e) {
             alert("浏览器存储空间不足，请尝试清空数据。");
         }
+
         upBtn.disabled = false;
     }
 
@@ -110,40 +122,39 @@
         btn.disabled = true;
         btn.innerText = "🚀 AI 正在撰写方案（约 10-20 秒）...";
 
-        // 重要：为了避开 Quota 限制，我们每次分析只取库中前 5 个产品
-        const activeDocs = productDB.slice(-5); 
-        const prompt = `你是一位保险精算专家。
-        客户需求：${reqs}
-        
-        以下是可选产品的内容摘要：
-        ${activeDocs.map(d => `[产品名: ${d.name}] 内容: ${d.content}`).join("\n\n")}
-        
-        任务：对比以上产品，给客户一个最合理的方案建议。`;
+        const activeDocs = productDB.slice(-5);
+
+        const prompt = `
+你是一位保险精算专家。
+客户需求：${reqs}
+
+以下是可选产品的内容摘要：
+${activeDocs.map(d => `[产品名: ${d.name}] 内容: ${d.content}`).join("\n\n")}
+
+任务：对比以上产品，给客户一个最合理的方案建议。
+        `;
 
         try {
-            // 使用 v1 接口 + gemini-1.5-flash (配额更高)
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${KEY}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }
+            );
 
             const data = await resp.json();
-            
-            if (data.error) {
-                if (data.error.status === "RESOURCE_EXHAUSTED") {
-                    throw new Error("API 频率达到限制。请等待 60 秒后再点击。");
-                }
-                throw new Error(data.error.message);
-            }
 
-            if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-                const mdText = data.candidates[0].content.parts[0].text;
-                out.innerHTML = marked.parse(mdText);
-                out.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                throw new Error("AI 此时无响应，请重试。");
-            }
+            if (data.error) throw new Error(data.error.message);
+
+            const mdText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!mdText) throw new Error("AI 无响应，请重试。");
+
+            // 安全渲染 Markdown
+            out.innerHTML = DOMPurify.sanitize(marked.parse(mdText));
+            out.scrollIntoView({ behavior: 'smooth' });
+
         } catch (e) {
             alert("生成失败: " + e.message);
             console.error(e);
@@ -161,5 +172,6 @@
         }
     }
 </script>
+
 </body>
 </html>
